@@ -37,3 +37,7 @@ soft-clean:
 .PHONY: clean
 clean:
 	cargo clean
+<<<<<<< HEAD
+=======
+	- rm $(CRATE_NAME).tar.gz
+>>>>>>> Initial

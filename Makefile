@@ -3,7 +3,7 @@ DOC_OPTION:=--no-deps
 
 
 .PHONY: all
-all: build check
+all: build check doc
 
 .PHONY: build
 build: soft-clean

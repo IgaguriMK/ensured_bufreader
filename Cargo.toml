@@ -1,0 +1,15 @@
+[package]
+name = "ensured_bufreader"
+description = "A Bufreader ensures N bytes in buffer."
+version = "0.1.0"
+categories = ["data-structures"]
+keywords = ["io", "reader"]
+edition = "2018"
+license = "MIT OR Apache-2.0"
+authors = ["Igaguri <igagurimk@gmail.com>"]
+readme = "README.md"
+documentation = "https://docs.rs/ensured_bufreader"
+repository = "https://github.com/IgaguriMK/ensured_bufreader"
+
+
+[dependencies]

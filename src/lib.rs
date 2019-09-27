@@ -110,8 +110,10 @@ mod tests {
 }
 
 impl<R: Read> Read for EnsuredBufReader<R> {
-    fn read(&mut self, _buf: &mut [u8]) -> io::Result<usize> {
-        unimplemented!()
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        let n = self.fill_buf()?.read(buf)?;
+        self.consume(n);
+        Ok(n)
     }
 }
 

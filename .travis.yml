@@ -1,9 +1,15 @@
 language: rust
 rust:
+  - nightly
+  - beta
   - stable
+matrix:
+  allow_failures:
+    - rust: nightly
 os:
   - linux
   - windows
+  - osx
 before_script:
   - rustup component add clippy
 script:

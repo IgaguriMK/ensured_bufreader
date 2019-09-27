@@ -95,14 +95,9 @@ impl<R: Read> EnsuredBufReader<R> {
     }
 
     fn move_buf_to_head(&mut self) {
-        let current_bytes = self.current_bytes();
-        if self.pos > current_bytes {
-            // New space does't overlap old space.
-            let (ls, rs) = self.buf.split_at_mut(self.pos);
-            let dist = &mut ls[0..current_bytes];
-            let from = &rs[0..current_bytes];
-            dist.copy_from_slice(from);
-        }
+        self.buf.copy_within(self.pos..self.cap, 0);
+        self.cap = self.cap - self.pos;
+        self.pos = 0;
     }
 }
 
@@ -115,7 +110,7 @@ mod tests {
 }
 
 impl<R: Read> Read for EnsuredBufReader<R> {
-    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+    fn read(&mut self, _buf: &mut [u8]) -> io::Result<usize> {
         unimplemented!()
     }
 }
@@ -129,7 +124,14 @@ impl<R: Read> BufRead for EnsuredBufReader<R> {
         if self.buf.len() - self.pos < self.ensure {
             self.move_buf_to_head()
         }
-        while self.current_bytes() < self.ensure {}
+        while self.current_bytes() < self.ensure {
+            let n = self.inner.read(&mut self.buf[self.cap..])?;
+            if n == 0 {
+                // Reach EOF
+                break;
+            }
+            self.cap += n;
+        }
 
         Ok(self.buffer())
     }

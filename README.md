@@ -21,7 +21,7 @@ But there is some differences.
 
 |   | `ensured_bufreader` | `buffered-reader = "0.10.0"` |
 |:-:|:--|:--|
-| Implementation strategy | Uses standird trait `BufRead` and simple wrapper struct | Provides new trait and some implementaions |
+| Implementation strategy | Uses standard trait `BufRead` and simple wrapper struct | Provides new trait and some implementaions |
 | When returns error | Immediately | Saved and returned when read position error occuered |
 | License | MIT or Apache-2.0 (permissive) | GPL-3.0 (copyleft) |
 

@@ -51,7 +51,13 @@ impl<R: Read> EnsuredBufReader<R> {
 
     /// Creates a new `EnsuredBufReader` with a specified `ensure`.
     ///
+    /// `ensure` should be positive.
+    ///
     /// If specified `ensure` is larger than `DEFAULT_ENSURE_BYTES / 2`, `capacity` will be set to `2 * ensure`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `ensure` is 0.
     pub fn with_ensure(ensure: usize, inner: R) -> EnsuredBufReader<R> {
         if ensure > DEFAULT_BUFFER_SIZE / 2 {
             EnsuredBufReader::with_capacity_and_ensure(2 * ensure, ensure, inner)
@@ -60,16 +66,21 @@ impl<R: Read> EnsuredBufReader<R> {
         }
     }
 
-    /// Creates a new `EnsuredBufReader` with a specified `capacity` and `ensure`. `capacity` must be larger than or equal to `ensure`.
+    /// Creates a new `EnsuredBufReader` with a specified `capacity` and `ensure`.
+    ///
+    /// `capacity` must be larger than or equal to `ensure`.
+    /// `ensure` should be positive.
     ///
     /// # Panics
     ///
     /// Panics if `capacity` is smaller than `ensure`.
+    /// Panics if `ensure` is 0.
     pub fn with_capacity_and_ensure(
         capacity: usize,
         ensure: usize,
         inner: R,
     ) -> EnsuredBufReader<R> {
+        assert_ne!(ensure, 0, "'ensure' should be positive.");
         assert!(
             capacity >= ensure,
             "'capacity' ({}) must be larger than or equal to 'ensure' ({}).",
@@ -96,8 +107,20 @@ impl<R: Read> EnsuredBufReader<R> {
 
     fn move_buf_to_head(&mut self) {
         self.buf.copy_within(self.pos..self.cap, 0);
-        self.cap = self.cap - self.pos;
+        self.cap -= self.pos;
         self.pos = 0;
+    }
+
+    #[doc(hideen)]
+    #[allow(missing_docs)]
+    pub fn test_buf_cap(&self) -> usize {
+        self.buf.len()
+    }
+
+    #[doc(hideen)]
+    #[allow(missing_docs)]
+    pub fn test_ensure(&self) -> usize {
+        self.ensure
     }
 }
 

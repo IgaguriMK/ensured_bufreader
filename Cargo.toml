@@ -13,6 +13,3 @@ repository = "https://github.com/IgaguriMK/ensured_bufreader"
 
 
 [dependencies]
-
-[dev-dependencies]
-rand = {version = "0.7.2", features = ["small_rng"]}

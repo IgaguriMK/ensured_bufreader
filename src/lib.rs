@@ -101,6 +101,16 @@ impl<R: Read> EnsuredBufReader<R> {
         &self.buf[self.pos..self.cap]
     }
 
+    /// Get current _ensure_ bytes.
+    pub fn get_ensure(&self) -> usize {
+        self.ensure
+    }
+
+    /// Get current _capacity_ bytes.
+    pub fn get_capacity(&self) -> usize {
+        self.ensure
+    }
+
     fn current_bytes(&self) -> usize {
         self.cap - self.pos
     }
@@ -109,26 +119,6 @@ impl<R: Read> EnsuredBufReader<R> {
         self.buf.copy_within(self.pos..self.cap, 0);
         self.cap -= self.pos;
         self.pos = 0;
-    }
-
-    #[doc(hideen)]
-    #[allow(missing_docs)]
-    pub fn test_buf_cap(&self) -> usize {
-        self.buf.len()
-    }
-
-    #[doc(hideen)]
-    #[allow(missing_docs)]
-    pub fn test_ensure(&self) -> usize {
-        self.ensure
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
     }
 }
 

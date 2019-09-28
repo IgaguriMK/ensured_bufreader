@@ -34,18 +34,18 @@ impl<R: Read> EnsuredBufReader<R> {
         EnsuredBufReader::with_capacity_and_ensure(DEFAULT_BUFFER_SIZE, DEFAULT_ENSURE_BYTES, inner)
     }
 
-    /// Creates a new `EnsuredBufReader` with a specified `capacity`.
+    /// Creates a new `EnsuredBufReader` with a specified minimal `min_capacity`.
     ///
-    /// If specified `capacity` is smaller than `2 * DEFAULT_ENSURE_BYTES`, `capacity` will be set to `2 * DEFAULT_ENSURE_BYTES`.
-    pub fn with_capacity(capacity: usize, inner: R) -> EnsuredBufReader<R> {
-        if capacity < 2 * DEFAULT_ENSURE_BYTES {
+    /// If specified `min_capacity` is too small, more bigger _capacity_ will be set automatically.
+    pub fn with_capacity(min_capacity: usize, inner: R) -> EnsuredBufReader<R> {
+        if min_capacity < 2 * DEFAULT_ENSURE_BYTES {
             EnsuredBufReader::with_capacity_and_ensure(
                 2 * DEFAULT_ENSURE_BYTES,
                 DEFAULT_ENSURE_BYTES,
                 inner,
             )
         } else {
-            EnsuredBufReader::with_capacity_and_ensure(capacity, DEFAULT_ENSURE_BYTES, inner)
+            EnsuredBufReader::with_capacity_and_ensure(min_capacity, DEFAULT_ENSURE_BYTES, inner)
         }
     }
 

@@ -15,8 +15,8 @@ release-build:
 
 .PHONY: check
 check: soft-clean
-	cargo test
 	cargo fmt -- --check
+	cargo test
 	cargo clippy -- -D warnings
 
 .PHONY: doc

@@ -30,6 +30,19 @@ pub struct EnsuredBufReader<R: Read> {
 
 impl<R: Read> EnsuredBufReader<R> {
     /// Creates a new `EnsuredBufReader` with a default _capacity_ (`DEFAULT_BUFFER_SIZE`) and a default _ensure_ (`DEFAULT_ENSURE_BYTES`).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::fs::File;
+    /// use ensured_bufreader::EnsuredBufReader;
+    ///
+    /// fn main() -> std::io::Result<()> {
+    ///     let f = File::open("Cargo.toml")?;
+    ///     let r = EnsuredBufReader::new(f);
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn new(inner: R) -> EnsuredBufReader<R> {
         EnsuredBufReader::with_capacity_and_ensure(DEFAULT_BUFFER_SIZE, DEFAULT_ENSURE_BYTES, inner)
     }
@@ -37,6 +50,19 @@ impl<R: Read> EnsuredBufReader<R> {
     /// Creates a new `EnsuredBufReader` with a specified minimal `min_capacity`.
     ///
     /// If specified `min_capacity` is too small, more bigger _capacity_ will be set automatically.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::fs::File;
+    /// use ensured_bufreader::EnsuredBufReader;
+    ///
+    /// fn main() -> std::io::Result<()> {
+    ///     let f = File::open("Cargo.toml")?;
+    ///     let r = EnsuredBufReader::with_capacity(1024, f);
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn with_capacity(min_capacity: usize, inner: R) -> EnsuredBufReader<R> {
         if min_capacity < 2 * DEFAULT_ENSURE_BYTES {
             EnsuredBufReader::with_capacity_and_ensure(
@@ -51,13 +77,26 @@ impl<R: Read> EnsuredBufReader<R> {
 
     /// Creates a new `EnsuredBufReader` with a specified `ensure`.
     ///
-    /// `ensure` should be positive.
+    /// `ensure` must be positive.
     ///
     /// If specified `ensure` is larger than `DEFAULT_ENSURE_BYTES / 2`, `capacity` will be set to `2 * ensure`.
     ///
     /// # Panics
     ///
     /// Panics if `ensure` is 0.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::fs::File;
+    /// use ensured_bufreader::EnsuredBufReader;
+    ///
+    /// fn main() -> std::io::Result<()> {
+    ///     let f = File::open("Cargo.toml")?;
+    ///     let r = EnsuredBufReader::with_ensure(16, f);
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn with_ensure(ensure: usize, inner: R) -> EnsuredBufReader<R> {
         if ensure > DEFAULT_BUFFER_SIZE / 2 {
             EnsuredBufReader::with_capacity_and_ensure(2 * ensure, ensure, inner)
@@ -69,18 +108,31 @@ impl<R: Read> EnsuredBufReader<R> {
     /// Creates a new `EnsuredBufReader` with a specified `capacity` and `ensure`.
     ///
     /// `capacity` must be larger than or equal to `ensure`.
-    /// `ensure` should be positive.
+    /// `ensure` must be positive.
     ///
     /// # Panics
     ///
     /// Panics if `capacity` is smaller than `ensure`.
     /// Panics if `ensure` is 0.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::fs::File;
+    /// use ensured_bufreader::EnsuredBufReader;
+    ///
+    /// fn main() -> std::io::Result<()> {
+    ///     let f = File::open("Cargo.toml")?;
+    ///     let r = EnsuredBufReader::with_capacity_and_ensure(1024, 32, f);
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn with_capacity_and_ensure(
         capacity: usize,
         ensure: usize,
         inner: R,
     ) -> EnsuredBufReader<R> {
-        assert_ne!(ensure, 0, "'ensure' should be positive.");
+        assert_ne!(ensure, 0, "'ensure' must be positive.");
         assert!(
             capacity >= ensure,
             "'capacity' ({}) must be larger than or equal to 'ensure' ({}).",

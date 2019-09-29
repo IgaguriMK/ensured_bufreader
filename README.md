@@ -3,6 +3,8 @@ ensured_bufreader
 
 [![ensured_bufreader at crates.io](https://img.shields.io/crates/v/ensured_bufreader.svg)](https://crates.io/crates/ensured_bufreader)
 [![ensured_bufreader at docs.rs](https://docs.rs/ensured_bufreader/badge.svg)](https://docs.rs/ensured_bufreader)
+[![Build Status (master)](https://travis-ci.org/IgaguriMK/ensured_bufreader.svg?branch=master)](https://travis-ci.org/IgaguriMK/ensured_bufreader)
+[![Build Status (dev)](https://travis-ci.org/IgaguriMK/ensured_bufreader.svg?branch=dev)](https://travis-ci.org/IgaguriMK/ensured_bufreader)
 
 ## Overview
 

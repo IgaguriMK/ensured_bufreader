@@ -3,7 +3,7 @@ DOC_OPTION:=--no-deps
 
 
 .PHONY: all
-all: build check
+all: build check doc
 
 .PHONY: build
 build: soft-clean
@@ -15,8 +15,8 @@ release-build:
 
 .PHONY: check
 check: soft-clean
-	cargo test
 	cargo fmt -- --check
+	cargo test
 	cargo clippy -- -D warnings
 
 .PHONY: doc

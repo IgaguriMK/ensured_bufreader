@@ -17,7 +17,7 @@ use std::io::{self, BufRead, Read};
 /// use ensured_bufreader::{DEFAULT_BUFFER_SIZE, EnsuredBufReader};
 ///
 /// fn main() -> std::io::Result<()> {
-///     let f = File::open("Cargo.toml")?;
+///     let f = File::open("README.md")?;
 ///     let r = EnsuredBufReader::new(f);
 ///
 ///     assert_eq!(r.get_capacity(), DEFAULT_BUFFER_SIZE);
@@ -36,7 +36,7 @@ pub const DEFAULT_BUFFER_SIZE: usize = 8 * 1024;
 /// use ensured_bufreader::{DEFAULT_ENSURED_BYTES, EnsuredBufReader};
 ///
 /// fn main() -> std::io::Result<()> {
-///     let f = File::open("Cargo.toml")?;
+///     let f = File::open("README.md")?;
 ///     let r = EnsuredBufReader::new(f);
 ///
 ///     assert_eq!(r.get_ensured_size(), DEFAULT_ENSURED_BYTES);
@@ -67,7 +67,7 @@ impl<R: Read> EnsuredBufReader<R> {
     /// use ensured_bufreader::EnsuredBufReader;
     ///
     /// fn main() -> std::io::Result<()> {
-    ///     let f = File::open("Cargo.toml")?;
+    ///     let f = File::open("README.md")?;
     ///     let r = EnsuredBufReader::new(f);
     ///     Ok(())
     /// }
@@ -91,7 +91,7 @@ impl<R: Read> EnsuredBufReader<R> {
     /// use ensured_bufreader::EnsuredBufReader;
     ///
     /// fn main() -> std::io::Result<()> {
-    ///     let f = File::open("Cargo.toml")?;
+    ///     let f = File::open("README.md")?;
     ///     let r = EnsuredBufReader::with_capacity(1024, f);
     ///     Ok(())
     /// }
@@ -129,7 +129,7 @@ impl<R: Read> EnsuredBufReader<R> {
     /// use ensured_bufreader::EnsuredBufReader;
     ///
     /// fn main() -> std::io::Result<()> {
-    ///     let f = File::open("Cargo.toml")?;
+    ///     let f = File::open("README.md")?;
     ///     let r = EnsuredBufReader::with_ensured_size(16, f);
     ///     Ok(())
     /// }
@@ -163,7 +163,7 @@ impl<R: Read> EnsuredBufReader<R> {
     /// use ensured_bufreader::EnsuredBufReader;
     ///
     /// fn main() -> std::io::Result<()> {
-    ///     let f = File::open("Cargo.toml")?;
+    ///     let f = File::open("README.md")?;
     ///     let r = EnsuredBufReader::with_capacity_and_ensured_size(1024, 32, f);
     ///     Ok(())
     /// }
@@ -199,7 +199,7 @@ impl<R: Read> EnsuredBufReader<R> {
     /// use ensured_bufreader::EnsuredBufReader;
     ///
     /// fn main() -> io::Result<()> {
-    ///     let f = File::open("Cargo.toml")?;
+    ///     let f = File::open("README.md")?;
     ///     let mut r = EnsuredBufReader::new(f);
     ///
     ///     // Read bytes from file and consume 8 bytes.
@@ -220,11 +220,35 @@ impl<R: Read> EnsuredBufReader<R> {
 
     /// Try to fill buffer and return reference to buffer.
     /// The buffer filled at least `ensured_size` bytes if `EnsuredBufReader` could read from underlying reader.
+    ///
+    /// If `ensured_size` is larger than half of _capacity_, buffer will be extended to `2 * ensured_size`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::fs::File;
+    /// use std::io::{self, BufRead};
+    /// use ensured_bufreader::EnsuredBufReader;
+    ///
+    /// fn main() -> io::Result<()> {
+    ///     let f = File::open("README.md")?;
+    ///     let mut r = EnsuredBufReader::with_capacity_and_ensured_size(1, 1, f);
+    ///
+    ///     // Fill buffer.
+    ///     let read_bytes = r.fill_buf_with_ensured_size(512)?;
+    ///     assert!(read_bytes.len() >= 512);
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn fill_buf_with_ensured_size(&mut self, ensured_size: usize) -> io::Result<&[u8]> {
         if self.current_bytes() >= ensured_size {
             return Ok(self.buffer());
         }
 
+        if self.buf.len() < 2 * ensured_size {
+            self.buf.resize(2 * ensured_size, 0);
+        }
         if self.buf.len() - self.pos < ensured_size {
             self.move_buf_to_head()
         }
@@ -249,7 +273,7 @@ impl<R: Read> EnsuredBufReader<R> {
     /// use ensured_bufreader::EnsuredBufReader;
     ///
     /// fn main() -> std::io::Result<()> {
-    ///     let f = File::open("Cargo.toml")?;
+    ///     let f = File::open("README.md")?;
     ///     let r = EnsuredBufReader::new(f);
     ///
     ///     assert_eq!(r.get_capacity(), 8192);
@@ -269,7 +293,7 @@ impl<R: Read> EnsuredBufReader<R> {
     /// use ensured_bufreader::EnsuredBufReader;
     ///
     /// fn main() -> std::io::Result<()> {
-    ///     let f = File::open("Cargo.toml")?;
+    ///     let f = File::open("README.md")?;
     ///     let r = EnsuredBufReader::new(f);
     ///
     ///     assert_eq!(r.get_ensured_size(), 128);

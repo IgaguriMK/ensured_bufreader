@@ -6,21 +6,21 @@ use ensured_bufreader::EnsuredBufReader;
 #[should_panic]
 fn capacity_is_smaller_than_ensure_not_allowed() {
     let r: &[u8] = &[];
-    let _ = EnsuredBufReader::with_capacity_and_ensure(100, 101, r);
+    let _ = EnsuredBufReader::with_capacity_and_ensured_size(100, 101, r);
 }
 
 #[test]
 #[should_panic]
 fn ensure_is_0_not_allowed_with_ensure() {
     let r: &[u8] = &[];
-    let _ = EnsuredBufReader::with_ensure(0, r);
+    let _ = EnsuredBufReader::with_ensured_size(0, r);
 }
 
 #[test]
 #[should_panic]
 fn ensure_is_0_not_allowed_with_capacity_and_ensure() {
     let r: &[u8] = &[];
-    let _ = EnsuredBufReader::with_capacity_and_ensure(1024, 0, r);
+    let _ = EnsuredBufReader::with_capacity_and_ensured_size(1024, 0, r);
 }
 
 #[test]
@@ -44,7 +44,7 @@ fn read_short() {
             read_bytes.as_slice(),
             "with capacity ={}, ensure = {}",
             r.get_capacity(),
-            r.get_ensure()
+            r.get_ensured_size()
         );
     }
 }
@@ -73,7 +73,7 @@ fn read_long() {
             read_bytes,
             "with capacity ={}, ensure = {}",
             r.get_capacity(),
-            r.get_ensure()
+            r.get_ensured_size()
         );
     }
 }
@@ -100,7 +100,7 @@ fn read_expected() {
         assert_eq!(orig_bytes.len(), size);
 
         for mut r in util::gen_readers(&orig_bytes) {
-            let ensure = r.get_ensure();
+            let ensure = r.get_ensured_size();
             loop {
                 let buf = r.fill_buf().unwrap();
                 let n = buf.len();
@@ -133,10 +133,10 @@ mod util {
             EnsuredBufReader::new(orig_bytes),
             EnsuredBufReader::with_capacity(1, orig_bytes),
             EnsuredBufReader::with_capacity(512, orig_bytes),
-            EnsuredBufReader::with_ensure(1, orig_bytes),
-            EnsuredBufReader::with_ensure(16 * 1024, orig_bytes),
-            EnsuredBufReader::with_capacity_and_ensure(1, 1, orig_bytes),
-            EnsuredBufReader::with_capacity_and_ensure(3, 3, orig_bytes),
+            EnsuredBufReader::with_ensured_size(1, orig_bytes),
+            EnsuredBufReader::with_ensured_size(16 * 1024, orig_bytes),
+            EnsuredBufReader::with_capacity_and_ensured_size(1, 1, orig_bytes),
+            EnsuredBufReader::with_capacity_and_ensured_size(3, 3, orig_bytes),
         ]
         .into_iter()
     }

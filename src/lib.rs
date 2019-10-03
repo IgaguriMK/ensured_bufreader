@@ -3,6 +3,7 @@
 //!
 
 #![warn(missing_docs)]
+use std::error;
 use std::fmt;
 use std::io::{self, BufRead, Read};
 
@@ -190,6 +191,7 @@ impl<R: Read> EnsuredBufReader<R> {
     }
 
     /// Returns a reference to current buffer.
+    /// The buffer filled at least _ensured_ bytes if `EnsuredBufReader` could read from underlying reader.
     ///
     /// # Examples
     ///
@@ -219,11 +221,15 @@ impl<R: Read> EnsuredBufReader<R> {
     }
 
     /// Try to fill buffer and return reference to buffer.
-    /// The buffer filled at least `ensured_size` bytes if `EnsuredBufReader` could read from underlying reader.
+    /// The buffer filled at least `expected_size` bytes if `EnsuredBufReader` could read from underlying reader.
     ///
-    /// If `ensured_size` is larger than half of _capacity_, buffer will be extended to `2 * ensured_size`.
+    /// # Errors
+    ///
+    /// Returns error that has `.kind() == ErrorKind::InvalidInput` if `expected_size` is larger than _capacity_.
     ///
     /// # Examples
+    ///
+    /// The buffer will be filled to `expected_size`.
     ///
     /// ```
     /// use std::fs::File;
@@ -232,27 +238,48 @@ impl<R: Read> EnsuredBufReader<R> {
     ///
     /// fn main() -> io::Result<()> {
     ///     let f = File::open("README.md")?;
-    ///     let mut r = EnsuredBufReader::with_capacity_and_ensured_size(1, 1, f);
+    ///     let mut r = EnsuredBufReader::with_capacity_and_ensured_size(1024, 1, f);
     ///
     ///     // Fill buffer.
-    ///     let read_bytes = r.fill_buf_with_ensured_size(512)?;
+    ///     let read_bytes = r.fill_buf_to_expected_size(512)?;
     ///     assert!(read_bytes.len() >= 512);
     ///
     ///     Ok(())
     /// }
     /// ```
-    pub fn fill_buf_with_ensured_size(&mut self, ensured_size: usize) -> io::Result<&[u8]> {
-        if self.current_bytes() >= ensured_size {
+    ///
+    /// If `expected_size` is larger than _capacity_, error will be returned.
+    ///
+    /// ```
+    /// use std::fs::File;
+    /// use std::io::{self, BufRead, ErrorKind};
+    /// use ensured_bufreader::EnsuredBufReader;
+    ///
+    /// fn main() -> io::Result<()> {
+    ///     let f = File::open("README.md")?;
+    ///     let mut r = EnsuredBufReader::with_capacity_and_ensured_size(512, 1, f);
+    ///
+    ///     let err = r.fill_buf_to_expected_size(513).unwrap_err();
+    ///     assert_eq!(err.kind(), ErrorKind::InvalidInput);
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn fill_buf_to_expected_size(&mut self, expected_size: usize) -> io::Result<&[u8]> {
+        if self.current_bytes() >= expected_size {
             return Ok(self.buffer());
         }
 
-        if self.buf.len() < 2 * ensured_size {
-            self.buf.resize(2 * ensured_size, 0);
+        if self.buf.len() < expected_size {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                ExpectedSizeTooLargeError(),
+            ));
         }
-        if self.buf.len() - self.pos < ensured_size {
+        if self.buf.len() - self.pos < expected_size {
             self.move_buf_to_head()
         }
-        while self.current_bytes() < ensured_size {
+        while self.current_bytes() < expected_size {
             let n = self.inner.read(&mut self.buf[self.cap..])?;
             if n == 0 {
                 // Reach EOF
@@ -326,7 +353,7 @@ impl<R: Read> Read for EnsuredBufReader<R> {
 
 impl<R: Read> BufRead for EnsuredBufReader<R> {
     fn fill_buf(&mut self) -> io::Result<&[u8]> {
-        self.fill_buf_with_ensured_size(self.ensured_size)
+        self.fill_buf_to_expected_size(self.ensured_size)
     }
 
     fn consume(&mut self, amt: usize) {
@@ -352,3 +379,15 @@ where
             .finish()
     }
 }
+
+/// An error type may be returned from [`.fill_buf_to_expected_size()`](struct.EnsuredBufReader.html#method.fill_buf_to_expected_size).
+#[derive(Debug, Clone, Copy)]
+pub struct ExpectedSizeTooLargeError();
+
+impl fmt::Display for ExpectedSizeTooLargeError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "internal buffer is too small.")
+    }
+}
+
+impl error::Error for ExpectedSizeTooLargeError {}

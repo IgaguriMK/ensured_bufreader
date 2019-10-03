@@ -1,4 +1,4 @@
-use std::io::{BufRead, Read};
+use std::io::{BufRead, ErrorKind, Read};
 
 use ensured_bufreader::EnsuredBufReader;
 
@@ -79,7 +79,7 @@ fn read_long() {
 }
 
 #[test]
-fn read_expected() {
+fn read_ensured_size() {
     let sizes: &[usize] = &[
         1usize,
         2,
@@ -121,6 +121,20 @@ fn read_expected() {
             }
         }
     }
+}
+
+#[test]
+fn fill_buf_to_expected_size_returns_error_when_expected_size_is_too_large() {
+    let short = "aÀあ\u{1F600}".as_bytes();
+    let mut input = Vec::with_capacity(short.len() * 32 * 1024);
+    for _ in 0..256 {
+        input.extend_from_slice(short);
+    }
+
+    let mut r = EnsuredBufReader::with_capacity(512, input.as_slice());
+
+    let err = r.fill_buf_to_expected_size(513).unwrap_err();
+    assert_eq!(err.kind(), ErrorKind::InvalidInput);
 }
 
 mod util {

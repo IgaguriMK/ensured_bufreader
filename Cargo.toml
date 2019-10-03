@@ -1,7 +1,7 @@
 [package]
 name = "ensured_bufreader"
 description = "A Bufreader ensures N bytes in buffer."
-version = "0.1.0"
+version = "0.2.0"
 categories = ["data-structures"]
 keywords = ["io", "reader"]
 edition = "2018"

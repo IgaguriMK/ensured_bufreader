@@ -195,6 +195,83 @@ impl<R: Read> EnsuredBufReader<R, Vec<u8>> {
     }
 }
 
+impl<R: Read> EnsuredBufReader<R, &mut [u8]> {
+    /// Creates a new `EnsuredBufReader` with given buffer.
+    ///
+    /// Buffer length must be larger than or equal to default _ensured_ size.
+    ///
+    /// # Panics
+    ///
+    /// Panics if buffer is smaller than default _ensured_ size.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::fs::File;
+    /// use ensured_bufreader::EnsuredBufReader;
+    ///
+    /// fn main() -> std::io::Result<()> {
+    ///     let f = File::open("README.md")?;
+    ///     let mut buf = [0u8; 1024];
+    ///     let r = EnsuredBufReader::from_buffer(&mut buf, f);
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn from_buffer(buf: &mut [u8], inner: R) -> EnsuredBufReader<R, &mut [u8]> {
+        assert!(
+            buf.len() >= DEFAULT_ENSURED_BYTES,
+            "buffer size ({}) must be larger than or equal to default ensured size' ({}).",
+            buf.len(),
+            DEFAULT_ENSURED_BYTES
+        );
+        EnsuredBufReader::from_buffer_and_ensured_size(buf, DEFAULT_ENSURED_BYTES, inner)
+    }
+
+    /// Creates a new `EnsuredBufReader` with given buffer and a specified `ensured_size`.
+    ///
+    /// Buffer length must be larger than or equal to `ensured_size`.
+    /// `ensured_size` must be positive.
+    ///
+    /// # Panics
+    ///
+    /// Panics if buffer is smaller than `ensured_size`.
+    /// Panics if `ensured_size` is 0.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::fs::File;
+    /// use ensured_bufreader::EnsuredBufReader;
+    ///
+    /// fn main() -> std::io::Result<()> {
+    ///     let f = File::open("README.md")?;
+    ///     let mut buf = [0u8; 1024];
+    ///     let r = EnsuredBufReader::from_buffer_and_ensured_size(&mut buf, 32, f);
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn from_buffer_and_ensured_size(
+        buf: &mut [u8],
+        ensured_size: usize,
+        inner: R,
+    ) -> EnsuredBufReader<R, &mut [u8]> {
+        assert_ne!(ensured_size, 0, "'ensure' must be positive.");
+        assert!(
+            buf.len() >= ensured_size,
+            "buffer size ({}) must be larger than or equal to 'ensured_size' ({}).",
+            buf.len(),
+            ensured_size
+        );
+        EnsuredBufReader {
+            inner,
+            buf,
+            pos: 0,
+            cap: 0,
+            ensured_size,
+        }
+    }
+}
+
 impl<R: Read, B: AsRef<[u8]> + AsMut<[u8]>> EnsuredBufReader<R, B> {
     /// Returns a reference to current buffer.
     /// The buffer filled at least _ensured_ bytes if `EnsuredBufReader` could read from underlying reader.

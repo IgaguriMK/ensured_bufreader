@@ -151,15 +151,15 @@ impl<R: Read> EnsuredBufReader<R, Vec<u8>> {
         }
     }
 
-    /// Creates a new `EnsuredBufReader` with a specified `capacity` and `ensure`.
+    /// Creates a new `EnsuredBufReader` with a specified `capacity` and `ensured_size`.
     ///
-    /// `capacity` must be larger than or equal to `ensure`.
-    /// `ensure` must be positive.
+    /// `capacity` must be larger than or equal to `ensured_size`.
+    /// `ensured_size` must be positive.
     ///
     /// # Panics
     ///
-    /// Panics if `capacity` is smaller than `ensure`.
-    /// Panics if `ensure` is 0.
+    /// Panics if `capacity` is smaller than `ensured_size`.
+    /// Panics if `ensured_size` is 0.
     ///
     /// # Examples
     ///

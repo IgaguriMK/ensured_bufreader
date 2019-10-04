@@ -420,9 +420,14 @@ impl<R: Read, B: AsRef<[u8]> + AsMut<[u8]>> EnsuredBufReader<R, B> {
     }
 
     fn move_buf_to_head(&mut self) {
-        self.buf.as_mut().copy_within(self.pos..self.cap, 0);
-        self.cap -= self.pos;
-        self.pos = 0;
+        if self.pos == self.cap {
+            self.pos = 0;
+            self.cap = 0;
+        } else {
+            self.buf.as_mut().copy_within(self.pos..self.cap, 0);
+            self.cap -= self.pos;
+            self.pos = 0;
+        }
     }
 }
 

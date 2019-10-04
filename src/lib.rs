@@ -255,7 +255,7 @@ impl<R: Read, B: AsRef<[u8]> + AsMut<[u8]>> EnsuredBufReader<R, B> {
     }
 
     /// Returns a reference to current buffer.
-    /// The buffer filled at least _ensured_ bytes if `EnsuredBufReader` could read from underlying reader.
+    /// This method doesn't read bytes from underlying reader.
     ///
     /// # Examples
     ///

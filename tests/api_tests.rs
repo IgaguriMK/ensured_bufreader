@@ -17,34 +17,6 @@ fn ensure_is_0_not_allowed_with_capacity_and_ensure() {
 }
 
 #[test]
-fn read_short() {
-    let input = "aÀあ\u{1F600}".as_bytes();
-
-    let mut r = EnsuredBufReader::new(input);
-    let mut read_bytes = Vec::<u8>::with_capacity(input.len());
-    let mut read_buf = [0u8; 256];
-
-    loop {
-        let n = r.read(&mut read_buf).unwrap();
-
-        let bs = &read_buf[..n];
-        read_bytes.extend_from_slice(bs);
-
-        if n < DEFAULT_ENSURED_BYTES {
-            break;
-        }
-    }
-
-    assert_eq!(
-        input,
-        read_bytes.as_slice(),
-        "with capacity ={}, ensure = {}",
-        r.get_capacity(),
-        r.get_ensured_size()
-    );
-}
-
-#[test]
 fn read_long() {
     let short = "aÀあ\u{1F600}".as_bytes();
     let mut input = Vec::with_capacity(short.len() * 32 * 1024);
@@ -78,47 +50,95 @@ fn read_long() {
 }
 
 #[test]
-fn read_ensured_size() {
-    let sizes: &[usize] = &[
-        1usize,
-        2,
-        3,
-        511,
-        512,
-        513,
-        16 * 1024 - 1,
-        16 * 1024,
-        16 * 1024 + 1,
-        256 * 1024,
-    ];
+fn fill_buf_short() {
+    let input = "aÀあ\u{1F600}".as_bytes();
 
-    for &size in sizes {
-        let mut input = Vec::<u8>::with_capacity(size);
-        input.resize(size - 1, 0);
-        input.push(1);
+    let mut r = EnsuredBufReader::new(input);
+    let mut read_bytes = Vec::<u8>::with_capacity(input.len());
 
-        let mut r = EnsuredBufReader::new(input.as_slice());
+    loop {
+        let buf = r.fill_buf().unwrap();
+        read_bytes.extend_from_slice(buf);
+        let n = buf.len();
+        r.consume(n);
 
-        let ensure = r.get_ensured_size();
-        loop {
-            let buf = r.fill_buf().unwrap();
-            let n = buf.len();
-            if n == 0 {
-                // EOF
-                break;
-            }
-            match buf.last() {
-                Some(1) => {} // reach end.
-                _ => assert!(
-                    buf.len() >= ensure,
-                    "buf.len() (= {}) should be larger than ensure (= {})",
-                    buf.len(),
-                    ensure
-                ),
-            }
-            r.consume(n);
+        if n < DEFAULT_ENSURED_BYTES {
+            break;
         }
     }
+
+    assert_eq!(
+        input,
+        read_bytes.as_slice(),
+        "with capacity ={}, ensure = {}",
+        r.get_capacity(),
+        r.get_ensured_size()
+    );
+}
+
+#[test]
+fn fill_buf_long() {
+    let short = "aÀあ\u{1F600}".as_bytes();
+    let mut input = Vec::with_capacity(short.len() * 32 * 1024);
+    for _ in 0..32 * 1024 {
+        input.extend_from_slice(short);
+    }
+
+    let mut r = EnsuredBufReader::new(input.as_slice());
+
+    let mut read_bytes = Vec::<u8>::with_capacity(input.len());
+
+    loop {
+        let buf = r.fill_buf().unwrap();
+        read_bytes.extend_from_slice(buf);
+        let n = buf.len();
+        r.consume(n);
+
+        if n < DEFAULT_ENSURED_BYTES {
+            break;
+        }
+    }
+
+    assert_eq!(
+        input,
+        read_bytes,
+        "with capacity ={}, ensure = {}",
+        r.get_capacity(),
+        r.get_ensured_size()
+    );
+}
+
+#[test]
+fn works_with_given_buffer() {
+    let short = "aÀあ\u{1F600}".as_bytes();
+    let mut input = Vec::with_capacity(short.len() * 32 * 1024);
+    for _ in 0..32 * 1024 {
+        input.extend_from_slice(short);
+    }
+
+    let mut buf = [0u8; 2 * DEFAULT_ENSURED_BYTES];
+    let mut r = EnsuredBufReader::from_mut_ref(&mut buf, input.as_slice());
+
+    let mut read_bytes = Vec::<u8>::with_capacity(input.len());
+
+    loop {
+        let buf = r.fill_buf().unwrap();
+        read_bytes.extend_from_slice(buf);
+        let n = buf.len();
+        r.consume(n);
+
+        if n < DEFAULT_ENSURED_BYTES {
+            break;
+        }
+    }
+
+    assert_eq!(
+        input,
+        read_bytes,
+        "with capacity ={}, ensure = {}",
+        r.get_capacity(),
+        r.get_ensured_size()
+    );
 }
 
 #[test]

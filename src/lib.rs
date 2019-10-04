@@ -50,15 +50,19 @@ pub const DEFAULT_ENSURED_BYTES: usize = 128;
 ///
 /// `EnsuredBufReader` keeps _ensured_ bytes in buffer if it can read from underlying reader.
 /// To fetch bytes into buffer, call `fill_buf()`.
-pub struct EnsuredBufReader<R: Read> {
+pub struct EnsuredBufReader<R, B>
+where
+    R: Read,
+    B: AsRef<[u8]> + AsMut<[u8]>,
+{
     inner: R,
-    buf: Vec<u8>,
+    buf: B,
     pos: usize,
     cap: usize,
     ensured_size: usize,
 }
 
-impl<R: Read> EnsuredBufReader<R> {
+impl<R: Read> EnsuredBufReader<R, Vec<u8>> {
     /// Creates a new `EnsuredBufReader` with a default _capacity_ (`DEFAULT_BUFFER_SIZE`) and a default _ensured_ size (`DEFAULT_ENSURED_BYTES`).
     ///
     /// # Examples
@@ -73,7 +77,7 @@ impl<R: Read> EnsuredBufReader<R> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn new(inner: R) -> EnsuredBufReader<R> {
+    pub fn new(inner: R) -> EnsuredBufReader<R, Vec<u8>> {
         EnsuredBufReader::with_capacity_and_ensured_size(
             DEFAULT_BUFFER_SIZE,
             DEFAULT_ENSURED_BYTES,
@@ -97,7 +101,7 @@ impl<R: Read> EnsuredBufReader<R> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn with_capacity(min_capacity: usize, inner: R) -> EnsuredBufReader<R> {
+    pub fn with_capacity(min_capacity: usize, inner: R) -> EnsuredBufReader<R, Vec<u8>> {
         if min_capacity < 2 * DEFAULT_ENSURED_BYTES {
             EnsuredBufReader::with_capacity_and_ensured_size(
                 2 * DEFAULT_ENSURED_BYTES,
@@ -135,7 +139,7 @@ impl<R: Read> EnsuredBufReader<R> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn with_ensured_size(ensured_size: usize, inner: R) -> EnsuredBufReader<R> {
+    pub fn with_ensured_size(ensured_size: usize, inner: R) -> EnsuredBufReader<R, Vec<u8>> {
         if ensured_size > DEFAULT_BUFFER_SIZE / 2 {
             EnsuredBufReader::with_capacity_and_ensured_size(2 * ensured_size, ensured_size, inner)
         } else {
@@ -173,7 +177,7 @@ impl<R: Read> EnsuredBufReader<R> {
         capacity: usize,
         ensured_size: usize,
         inner: R,
-    ) -> EnsuredBufReader<R> {
+    ) -> EnsuredBufReader<R, Vec<u8>> {
         assert_ne!(ensured_size, 0, "'ensure' must be positive.");
         assert!(
             capacity >= ensured_size,
@@ -189,7 +193,9 @@ impl<R: Read> EnsuredBufReader<R> {
             ensured_size,
         }
     }
+}
 
+impl<R: Read, B: AsRef<[u8]> + AsMut<[u8]>> EnsuredBufReader<R, B> {
     /// Returns a reference to current buffer.
     /// The buffer filled at least _ensured_ bytes if `EnsuredBufReader` could read from underlying reader.
     ///
@@ -217,7 +223,7 @@ impl<R: Read> EnsuredBufReader<R> {
     /// }
     /// ```
     pub fn buffer(&self) -> &[u8] {
-        &self.buf[self.pos..self.cap]
+        &self.buf.as_ref()[self.pos..self.cap]
     }
 
     /// Try to fill buffer and return reference to buffer.
@@ -270,17 +276,17 @@ impl<R: Read> EnsuredBufReader<R> {
             return Ok(self.buffer());
         }
 
-        if self.buf.len() < expected_size {
+        if self.buf.as_mut().len() < expected_size {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidInput,
                 ExpectedSizeTooLargeError(),
             ));
         }
-        if self.buf.len() - self.pos < expected_size {
+        if self.buf.as_mut().len() - self.pos < expected_size {
             self.move_buf_to_head()
         }
         while self.current_bytes() < expected_size {
-            let n = self.inner.read(&mut self.buf[self.cap..])?;
+            let n = self.inner.read(&mut self.buf.as_mut()[self.cap..])?;
             if n == 0 {
                 // Reach EOF
                 break;
@@ -308,7 +314,7 @@ impl<R: Read> EnsuredBufReader<R> {
     /// }
     /// ```
     pub fn get_capacity(&self) -> usize {
-        self.buf.len()
+        self.buf.as_ref().len()
     }
 
     /// Get current _ensured_ size.
@@ -337,13 +343,13 @@ impl<R: Read> EnsuredBufReader<R> {
     }
 
     fn move_buf_to_head(&mut self) {
-        self.buf.copy_within(self.pos..self.cap, 0);
+        self.buf.as_mut().copy_within(self.pos..self.cap, 0);
         self.cap -= self.pos;
         self.pos = 0;
     }
 }
 
-impl<R: Read> Read for EnsuredBufReader<R> {
+impl<R: Read, B: AsRef<[u8]> + AsMut<[u8]>> Read for EnsuredBufReader<R, B> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         let n = self.fill_buf()?.read(buf)?;
         self.consume(n);
@@ -351,7 +357,7 @@ impl<R: Read> Read for EnsuredBufReader<R> {
     }
 }
 
-impl<R: Read> BufRead for EnsuredBufReader<R> {
+impl<R: Read, B: AsRef<[u8]> + AsMut<[u8]>> BufRead for EnsuredBufReader<R, B> {
     fn fill_buf(&mut self) -> io::Result<&[u8]> {
         self.fill_buf_to_expected_size(self.ensured_size)
     }
@@ -365,16 +371,17 @@ impl<R: Read> BufRead for EnsuredBufReader<R> {
     }
 }
 
-impl<R> fmt::Debug for EnsuredBufReader<R>
+impl<R, B> fmt::Debug for EnsuredBufReader<R, B>
 where
     R: Read + fmt::Debug,
+    B: AsRef<[u8]> + AsMut<[u8]>,
 {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt.debug_struct("BufReader")
+        fmt.debug_struct("EnsuredBufReader")
             .field("reader", &self.inner)
             .field(
                 "buffer",
-                &format_args!("{}/{}", self.cap - self.pos, self.buf.len()),
+                &format_args!("{}/{}", self.cap - self.pos, self.buf.as_ref().len()),
             )
             .finish()
     }
